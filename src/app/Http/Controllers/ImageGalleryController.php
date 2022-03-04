@@ -18,7 +18,7 @@ class ImageGalleryController extends Controller
     public function index()
     {
 
-        return $this->showGallery('cats', 10, 'landscape');
+        return $this->showGallery('dogs', 10, 'landscape');
     }
 
     public function search(Request $request)
