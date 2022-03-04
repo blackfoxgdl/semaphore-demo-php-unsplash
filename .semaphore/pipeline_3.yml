@@ -1,0 +1,42 @@
+version: v1.0
+name: Deploy to Heroku
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Deploy
+    task:
+      jobs:
+        - name: Deploy
+          commands:
+            - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
+            - 'docker pull "$DOCKER_USERNAME"/semaphore-demo-php:$SEMAPHORE_WORKFLOW_ID'
+            - 'heroku container:login'
+            - 'docker tag "$DOCKER_USERNAME"/semaphore-demo-php:$SEMAPHORE_WORKFLOW_ID registry.heroku.com/$HEROKU_APP/web'
+            - docker push registry.heroku.com/$HEROKU_APP/web
+            - 'heroku config:set UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY'
+            - 'heroku config:set UNSPLASH_SECRET_KEY=$UNSPLASH_SECRET_KEY'
+            - 'heroku config:set APP_ENV=production'
+            - 'heroku config:set APP_KEY=0e0ba3d5-b4ea-4b2c-95cc-9a953c5f1a56'
+            - 'heroku labs:enable --app=$HEROKU_APP runtime-new-layer-extract'
+            - 'heroku stack:set container --app $HEROKU_APP'
+            - 'heroku container:release web --app $HEROKU_APP'
+      secrets:
+        - name: app-env
+        - name: dockerhub
+        - name: heroku
+      env_vars:
+        - name: HEROKU_APP
+          value: semaphore-demo-php
+  - name: Tag latest image
+    task:
+      secrets:
+        - name: dockerhub
+      jobs:
+        - name: Tag latest image
+          commands:
+            - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
+            - 'docker pull "$DOCKER_USERNAME"/semaphore-demo-php:$SEMAPHORE_WORKFLOW_ID'
+            - 'docker tag "$DOCKER_USERNAME"/semaphore-demo-php:$SEMAPHORE_WORKFLOW_ID "$DOCKER_USERNAME"/semaphore-demo-php:latest'
+            - 'docker pull "$DOCKER_USERNAME"/semaphore-demo-php:latest'
